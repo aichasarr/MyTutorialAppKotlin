@@ -1,5 +1,6 @@
 package com.mongodb.app
-
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
@@ -61,7 +62,7 @@ class ItemActivity : AppCompatActivity() {
                 .initialSubscriptions { realm ->
                     add(
                         realm.query<Item>(
-                            "owner_id == $0",
+                            "owner_id == $0 AND priority <= ${PriorityLevel.High.priority.toString()}",
                             realmApp.currentUser!!.identity
                         ),
                         "User's Items"
@@ -124,10 +125,21 @@ class ItemActivity : AppCompatActivity() {
 
         val itemSummaryInput = view.findViewById<View>(R.id.plain_text_input) as EditText
 
+        val spinner = view.findViewById<View>(R.id.spinner) as Spinner
+
+        val adapter = ArrayAdapter.createFromResource(
+            this,
+            R.array.priorities,
+            android.R.layout.simple_spinner_item
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
         dialogBuilder
             .setPositiveButton("Create") { dialog, _ ->
                 run {
                     val item = Item(realmApp.currentUser!!.identity)
+                    item.priority = PriorityLevel.valueOf(spinner.selectedItem.toString()).priority
                     item.summary = itemSummaryInput.text.toString()
 
                     CoroutineScope(Dispatchers.IO).launch {
@@ -139,7 +151,7 @@ class ItemActivity : AppCompatActivity() {
                     // Display the item created using Android's Toast feedback popup
                     Toast.makeText(
                         this,
-                        "Item created: ${item.summary}",
+                        "Item created: ${item.summary} with priority: ${item.priority}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
